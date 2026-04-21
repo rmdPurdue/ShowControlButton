@@ -30,3 +30,17 @@ Configuring the settings for the OSC message you wish to send when the ShowContr
 
 ## Troubleshooting ##
 The ShowControlButton software has not undergone robust stress testing; typically, if something goes wrong, remove power, count to ten, resupply power then try again. Restore to faculty defaults and reset your network configuration and OSC message configuration, if necessary.
+
+## Parts List ##
+Adafruit Feather M4 Express
+Adafruit Relay (Non-latching) Featherwing
+Adafruit Ethernet Featherwing
+10mm Diffused Blue LED
+10mm LED Bevel LED Holder
+12mm Tactile button
+22mm Plastic Button (white)
+Micro USB extension
+Ethernet Coupler
+1/4" TS Audio Jack
+Tactile Button mounting plate (3d printed)
+Enclosure (including feet and standoffs, laser cut from 6mm draftboard)
