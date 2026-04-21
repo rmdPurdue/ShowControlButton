@@ -85,7 +85,7 @@ MIMETypes.configure(
 
 # Create a socket pool
 pool = adafruit_connection_manager.get_radio_socketpool(eth)
-server = Server(pool, "/static", debug=True)
+server = Server(pool, "../static", debug=True)
 
 
 @server.route("/")
@@ -174,7 +174,7 @@ def submit_form_handler(request: Request):
 
 
 def update_toml():
-    with open("/settings.toml", "w") as f:
+    with open("settings.toml", "w") as f:
         f.write(f'IP = "{my_network_config.ip_as_string()}"\n')
         f.write(f'SN = "{my_network_config.subnet_as_string()}"\n')
         f.write(f'GW = "{my_network_config.gateway_as_string()}"\n')
