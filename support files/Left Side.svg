@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_x30_" xmlns="http://www.w3.org/2000/svg" width="135.25mm" height="108.25mm" version="1.1" viewBox="0 0 383.386 306.85">
+  <!-- Generator: Adobe Illustrator 30.3.0, SVG Export Plug-In . SVG Version: 2.1.3 Build 182)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: none;
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: .709px;
+      }
+    </style>
+  </defs>
+  <g id="LWPOLYLINE">
+    <path class="st0" d="M365.74,83.976v116.22h17.291v92.126H42.874v5.669c0,4.697-3.807,8.504-8.504,8.504H8.858c-4.697,0-8.504-3.807-8.504-8.504v-97.795h17.291v-116.22H.354V.354h77.953v17.291h70.866V.354h85.039v17.291h70.866V.354h77.953v83.622h-17.291Z"/>
+  </g>
+  <g id="CIRCLE">
+    <circle class="st0" cx="21.614" cy="283.819" r="12.756"/>
+  </g>
+</svg>
