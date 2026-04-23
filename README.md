@@ -32,15 +32,15 @@ Configuring the settings for the OSC message you wish to send when the ShowContr
 The ShowControlButton software has not undergone robust stress testing; typically, if something goes wrong, remove power, count to ten, resupply power then try again. Restore to faculty defaults and reset your network configuration and OSC message configuration, if necessary.
 
 ## Parts List ##
-- Adafruit Feather M4 Express
-- Adafruit Relay (Non-latching) Featherwing
+- Adafruit Feather M4 Express (https://www.adafruit.com/product/3857)
+- Adafruit Relay (Non-latching) Featherwing (https://www.adafruit.com/product/2895)
 - Adafruit Ethernet Featherwing (https://www.adafruit.com/product/3201)
 - 10mm Diffused Blue LED (https://www.adafruit.com/product/847)
 - 10mm LED Bevel LED Holder (https://www.adafruit.com/product/2171)
-- 12mm Tactile button
-- 22mm Plastic Button (white)
-- Micro USB extension
-- Ethernet Coupler
-- 1/4" TS Audio Jack
-- Tactile Button mounting plate (3d printed)
-- Enclosure (including feet and standoffs, laser cut from 6mm draftboard)
+- 12mm Tactile button (https://www.adafruit.com/product/1119)
+- 22mm Plastic Button (white) (https://www.automationdirect.com/adc/shopping/catalog/pushbuttons_-z-_switches_-z-_indicators/pushbuttons/gcx3105)
+- Micro USB extension (https://www.digikey.com/en/products/detail/adafruit-industries-llc/6068/25897272)
+- Ethernet Coupler (https://www.mcmaster.com/catalog/3243T1)
+- 1/4" TS Audio Jack (https://www.mcmaster.com/catalog/1760N21)
+- Tactile Button mounting plate (3d printed) (https://github.com/rmdPurdue/ShowControlButton/blob/main/support%20files/Tactile%2BButton%2BMount.stp)
+- Enclosure (including feet and standoffs, laser cut from 6mm draftboard) (https://github.com/rmdPurdue/ShowControlButton/tree/main/support%20files/laser-cut)
