@@ -1,0 +1,8 @@
+[ethernet]
+mac = "DE:AD:BE:EF:FE:ED"
+ip = "192.168.1.10"
+subnet = "255.255.254.0"
+gateway = "192.168.1.1"
+dhcp_en = false
+
+[osc]
