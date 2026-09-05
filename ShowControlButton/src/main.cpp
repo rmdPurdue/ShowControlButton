@@ -67,6 +67,8 @@ OSCMessage outMsg;
 
 // Setup Ethernet FeatherWing
 EthernetUDP udp;
+unsigned long lastLinkCheckTime = 0;
+const unsigned long linkCheckInterval = 1000;
 
 // Web server functions: default page; config page; form handler for config submission
 
@@ -79,6 +81,8 @@ void cyclePin(uint8_t);
 void sendOSCMessage();
 
 void routeLEDControl(OSCMessage &msg);
+
+void handleNetworkConnectionChanges();
 
 void setup() {
   // Initialize the LED
@@ -127,15 +131,7 @@ void setup() {
   }
 
   // Initalize Ethernet FeatherWing
-  Ethernet.init(Hardware::Outputs::ETHERNET_CS_PIN);
-  IPAddress ip, subnet, gateway;
-  if(!ip.fromString(netManager.getConfiguration().ipAddress.c_str()) ||
-     !subnet.fromString(netManager.getConfiguration().subnet.c_str()) ||
-     !gateway.fromString(netManager.getConfiguration().gateway.c_str())) {
-    Serial.println("Critical Error: one or more static IPs in TOML file are invalid.");
-  } else {
-    Ethernet.begin(netManager.getConfiguration().mac_address, ip, gateway, subnet);
-  }
+  netManager.init(netManager.getConfiguration(), Hardware::Outputs::ETHERNET_CS_PIN);
 
   // Initialize outgoing OSC Message
   outMsg.setAddress(oscManager.getOSCAddress().c_str());
@@ -145,6 +141,9 @@ void setup() {
 }
 
 void loop() {
+  // Check network connection
+  netManager.updateConnectionStatus();
+
   // Check status flags
   if(Flags::triggerReset) {
     resetToDefaults();
@@ -160,7 +159,11 @@ void loop() {
   }
   
   if(Flags::sendOSC) {
-    sendOSCMessage();
+    if(netManager.isNetworkReady()) {
+        sendOSCMessage();
+    } else {
+      Serial.println("Network not available.");
+    }
     Flags::sendOSC = false;
   }
 
@@ -181,19 +184,21 @@ void loop() {
   }
   
   // parse incoming osc messages
-  OSCMessage inMsg;
-  int size = udp.parsePacket();
-  if(size > 0) {
-    while(size--) {
-      inMsg.fill(udp.read());
-    }
+  if(netManager.isNetworkReady()) {
+    OSCMessage inMsg;
+    int size = udp.parsePacket();
+    if(size > 0) {
+      while(size--) {
+        inMsg.fill(udp.read());
+      }
 
-    if(!inMsg.hasError()) {
-      inMsg.dispatch(oscManager.getIncomingAddress().c_str(), routeLEDControl);
-    } else {
-      OSCErrorCode error = inMsg.getError();
-      Serial.print("Error: OSC Packet error code: ");
-      Serial.println(error);
+      if(!inMsg.hasError()) {
+        inMsg.dispatch(oscManager.getIncomingAddress().c_str(), routeLEDControl);
+      } else {
+        OSCErrorCode error = inMsg.getError();
+        Serial.print("Error: OSC Packet error code: ");
+        Serial.println(error);
+      }
     }
   }
 
