@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <sstream>
+#include <iomanip>
 #include "Adafruit_SPIFlash.h"
 #include "Ethernet.h"
 #include "EthernetUdp.h"
@@ -60,6 +62,7 @@ NetworkManager netManager;
 
 Adafruit_SPIFlash flash(&flashTransport);
 FatFileSystem fatfs;
+std::string configFileContent;
 
 // Define outgoing OSC message variable, OSC Manager
 OSCManager oscManager;
@@ -73,6 +76,14 @@ const unsigned long linkCheckInterval = 1000;
 // Web server functions: default page; config page; form handler for config submission
 
 // Start the web server
+
+void updateConfigSettings(const std::string& key, const std::string& value); 
+
+bool flashConfigSettings();
+
+void resetToDefaults();
+
+std::string saveHexArrayToTomlString(const uint8_t* array, size_t length);
 
 bool loadHardwareConfig(const std::string& tomlString);
 
@@ -111,21 +122,21 @@ void setup() {
 
   File configFile = fatfs.open("settings.toml", FILE_READ);
   if(configFile) {
-    std::string fileContent;
-    fileContent.reserve(configFile.size());
+    configFileContent.reserve(configFile.size());
     while(configFile.available()) {
-      fileContent.push_back((char)configFile.read());
+      configFileContent.push_back((char)configFile.read());
     }
     configFile.close();
-    if(netManager.loadConfigFromToml(fileContent)) {
+
+    if(netManager.loadConfigFromToml(configFileContent)) {
       Serial.println("Network config mapped successfully.");
     }
 
-    if(oscManager.loadConfigFromToml(fileContent)) {
+    if(oscManager.loadConfigFromToml(configFileContent)) {
       Serial.println("OSC config mapped successfully.");
     }
 
-    if(loadHardwareConfig(fileContent)) {
+    if(loadHardwareConfig(configFileContent)) {
       Serial.println("Hardware config loaded successfully.");
     }
   }
@@ -208,6 +219,96 @@ void loop() {
   // TODO: is there merit in adding a "stage mode lockout" to shutdown the web server when the device is in use?
   // This could be a 30 second hold of the user button, and a 30 second hold to release it.
   
+}
+
+void updateConfigSettings(const std::string& key, const std::string& value) {
+  size_t keyPos = configFileContent.find(key + " =");
+  if(keyPos == std::string::npos) {
+    keyPos = configFileContent.find(key + "=");
+  }
+  
+  std::string newLine = key + " = " + value + "\n";
+
+  if(keyPos != std::string::npos) {
+    // Key exists. find the end of the line and replace it.
+    size_t endOfLine = configFileContent.find("\n", keyPos);
+    if(endOfLine == std::string::npos) {
+      endOfLine = configFileContent.length();
+    } else {
+      endOfLine += 1;
+    }
+    configFileContent.replace(keyPos, endOfLine - keyPos, newLine);
+  } else {
+    // Key doesn't exist. Append to end.
+    if(!configFileContent.empty() && configFileContent.back() != '\n') {
+      configFileContent.push_back('\n');
+    }
+    configFileContent.append(newLine);
+  }
+}
+
+bool flashConfigSettings() {
+  File writeHandle = fatfs.open("settings.toml", FILE_WRITE);
+  if(writeHandle) {
+    writeHandle.write(configFileContent.c_str(), configFileContent.length());
+    writeHandle.close();
+    Serial.println("Batch settings successfully committed to flash.");
+    return true;
+  } else {
+    Serial.println("Error: Failed to write config file to storage.");
+    return false;
+  }
+}
+
+void resetToDefaults() {
+  NetworkConfig defaultNetConfig;
+  defaultNetConfig.ipAddress = "192.168.1.10";
+  defaultNetConfig.subnet = "255.255.254.0";
+  defaultNetConfig.gateway = "192.168.1.1";
+  defaultNetConfig.dhcpEnabled = false;
+  uint8_t dummy[6] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
+  memcpy(defaultNetConfig.mac_address, dummy, 6);
+
+  OSCConfig defaultOSCConfig;
+  defaultOSCConfig.destination_ip = "127.0.0.1";
+  defaultOSCConfig.destination_port = 8000;
+  defaultOSCConfig.incoming_port = 9000;
+  defaultOSCConfig.incoming_address = "/lamp/on";
+  defaultOSCConfig.osc_address = "/test";
+    // I need an array of arguments
+    // I need an array of argument types
+  defaultOSCConfig.enabled = false;
+
+  updateConfigSettings("ip", defaultNetConfig.ipAddress);
+  updateConfigSettings("subnet", defaultNetConfig.subnet);
+  updateConfigSettings("gatway", defaultNetConfig.gateway);
+  updateConfigSettings("dhcp_en", defaultNetConfig.dhcpEnabled ? "true": "false");
+  updateConfigSettings("ip", saveHexArrayToTomlString(defaultNetConfig.mac_address, sizeof(defaultNetConfig.mac_address)));
+  updateConfigSettings("destination_ip", defaultOSCConfig.destination_ip);
+  updateConfigSettings("destination_port", std::to_string(defaultOSCConfig.destination_port));
+  updateConfigSettings("incoming_port", std::to_string(defaultOSCConfig.incoming_port));
+  updateConfigSettings("incoming_address", defaultOSCConfig.incoming_address);
+  updateConfigSettings("message", defaultOSCConfig.osc_address);
+  updateConfigSettings("enabled", defaultOSCConfig.enabled ? "true" : "false");
+
+  flashConfigSettings();
+}
+
+std::string saveHexArrayToTomlString(const uint8_t* array, size_t length) {
+  if(length == 0) return "";
+
+  std::stringstream ss;
+  
+  for(size_t i = 0; i < length; ++i) {
+    ss << std::setfill('0') << std::setw(2)
+       << std::hex << std::uppercase << (int)array[i];
+
+    if(i < length - 1) {
+      ss << ":";
+    }
+  }
+
+  return ss.str();
 }
 
 bool loadHardwareConfig(const std::string& tomlString) {
