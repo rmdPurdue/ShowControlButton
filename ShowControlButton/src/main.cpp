@@ -34,6 +34,7 @@ namespace Flags {
   bool triggerReset = false;
   bool triggerRelay = false;
   bool sendOSC = false;
+  bool lightLED = false;
 }
 
 // Define outputs
@@ -60,7 +61,7 @@ NetworkManager netManager;
 Adafruit_SPIFlash flash(&flashTransport);
 FatFileSystem fatfs;
 
-// Define OSC message variable and OSC Manager
+// Define outgoing OSC message variable, OSC Manager
 OSCManager oscManager;
 OSCMessage outMsg;
 
@@ -76,6 +77,8 @@ bool loadHardwareConfig(const std::string& tomlString);
 void cyclePin(uint8_t);
 
 void sendOSCMessage();
+
+void routeLEDControl(OSCMessage &msg);
 
 void setup() {
   // Initialize the LED
@@ -134,8 +137,11 @@ void setup() {
     Ethernet.begin(netManager.getConfiguration().mac_address, ip, gateway, subnet);
   }
 
-  // Initialize OSC Message
+  // Initialize outgoing OSC Message
   outMsg.setAddress(oscManager.getOSCAddress().c_str());
+
+  // Start incoming UDP
+  udp.begin(oscManager.getInPort());
 }
 
 void loop() {
@@ -175,8 +181,21 @@ void loop() {
   }
   
   // parse incoming osc messages
+  OSCMessage inMsg;
+  int size = udp.parsePacket();
+  if(size > 0) {
+    while(size--) {
+      inMsg.fill(udp.read());
+    }
 
-  // update led output
+    if(!inMsg.hasError()) {
+      inMsg.dispatch(oscManager.getIncomingAddress().c_str(), routeLEDControl);
+    } else {
+      OSCErrorCode error = inMsg.getError();
+      Serial.print("Error: OSC Packet error code: ");
+      Serial.println(error);
+    }
+  }
 
   // handle web server and config requests
   // Update outgoing osc message data
@@ -207,7 +226,24 @@ void sendOSCMessage() {
     return;
   }
 
-  udp.beginPacket(targetIp, oscManager.getPort());
+  udp.beginPacket(targetIp, oscManager.getOutPort());
   outMsg.send(udp);
   udp.endPacket();
+}
+
+void routeLEDControl(OSCMessage &msg) {
+  bool lampState = false;
+  if(msg.isBoolean(0)) {
+    lampState = msg.getBoolean(0);
+  } else if(msg.isInt(0)) {
+    lampState = (msg.getInt(0) == 1);
+  } else if(msg.isFloat(0)) {
+    lampState = (msg.getFloat(0) >= 0.5f);
+  }
+
+  if(lampState) {
+    Flags::lightLED = true;
+  } else {
+    Flags::lightLED = false;
+  }
 }
