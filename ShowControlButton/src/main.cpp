@@ -93,8 +93,6 @@ void sendOSCMessage();
 
 void routeLEDControl(OSCMessage &msg);
 
-void handleNetworkConnectionChanges();
-
 void setup() {
   // Initialize the LED
   LED.initialize();

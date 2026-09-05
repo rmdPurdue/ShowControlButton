@@ -1,8 +1,14 @@
 #pragma once
 #include <Arduino.h>
 #include <string>
+#include <vector>
+#include <variant>
+#include <sstream>
+#include "OSCMessage.h"
 #define TOML_EXCEPTIONS 0
 #include <toml++/toml.hpp>
+
+using OscArg = std::variant<int, float, bool, std::string>;
 
 struct OSCConfig {
     std::string destination_ip = "127.0.0.1";
@@ -10,14 +16,16 @@ struct OSCConfig {
     int incoming_port = 9000;
     std::string incoming_address = "/lamp/on";
     std::string osc_address = "/test";
-    // I need an array of arguments
-    // I need an array of argument types
+    std::vector<OscArg> args;
+    std::vector<std::string> types;
     bool enabled = false;
 };
 
 class OSCManager {
 private:
     OSCConfig activeConfig;
+    bool isInt(const std::string& s);
+    bool isFloat(const std::string& s);
 
 public:
     void updateConfiguration(const OSCConfig& newConfig);
@@ -28,4 +36,6 @@ public:
     int getOutPort() const;
     int getInPort() const;
     bool loadConfigFromToml(const std::string& tomlString);
+    void parseCommand(const std::string& rawLine);
+    OSCMessage compileMessage(OSCMessage& msg);
 };
