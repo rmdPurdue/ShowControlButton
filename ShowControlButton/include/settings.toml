@@ -1,3 +1,6 @@
+[hardware]
+latching = false
+
 [ethernet]
 mac = "DE:AD:BE:EF:FE:ED"
 ip = "192.168.1.10"
@@ -6,3 +9,7 @@ gateway = "192.168.1.1"
 dhcp_en = false
 
 [osc]
+destination_ip = "192.168.1.11"
+dstination_port = "8000"
+message = "/test"
+enabled = true

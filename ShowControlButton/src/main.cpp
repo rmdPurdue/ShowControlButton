@@ -2,10 +2,12 @@
 #include "Adafruit_SPIFlash.h"
 #include "Ethernet.h"
 #include "EthernetUdp.h"
+#include "OSCMessage.h"
 #include "SdFat.h"
 #include "DigitalButton.h"
 #include "DigitalOutput.h"
 #include "NetworkManager.h"
+#include "OSCManager.h"
 #define TOML_EXCEPTIONS 0
 #include <toml++/toml.hpp>
 
@@ -25,6 +27,13 @@ namespace Hardware {
     constexpr uint32_t RESET_BUTTON_HOLD_TIME_MS = 5000;
     constexpr uint32_t USER_BUTTON_DEBOUNCE_TIME_MS = 50;
   }
+}
+
+namespace Flags {
+  bool latchingRelay = false;
+  bool triggerReset = false;
+  bool triggerRelay = false;
+  bool sendOSC = false;
 }
 
 // Define outputs
@@ -51,27 +60,28 @@ NetworkManager netManager;
 Adafruit_SPIFlash flash(&flashTransport);
 FatFileSystem fatfs;
 
-
-// Initialize OSC message variable
+// Define OSC message variable and OSC Manager
+OSCManager oscManager;
+OSCMessage outMsg;
 
 // Setup Ethernet FeatherWing
 EthernetUDP udp;
 
-// Initialize ethernet interface without DHCP
-
 // Web server functions: default page; config page; form handler for config submission
-
-// Update TOML file with config settings
 
 // Start the web server
 
-int myFunction(int, int);
+bool loadHardwareConfig(const std::string& tomlString);
+
+void cyclePin(uint8_t);
+
+void sendOSCMessage();
 
 void setup() {
   // Initialize the LED
   LED.initialize();
 
-  //Initialize the relay
+  // Initialize the relay
   relay.initialize();
   latchReset.initialize();
 
@@ -81,7 +91,14 @@ void setup() {
   // Initialize reset button, including debouncing
   resetButton.initialize();
 
-  // Load network configuration from storage
+  // Initialize relay outputs
+  digitalWrite(Hardware::Outputs::RELAY_PIN, LOW);
+  digitalWrite(Hardware::Outputs::LATCH_RESET_PIN, LOW);
+
+  // Initialize LED output
+  digitalWrite(Hardware::Outputs::LED_PIN, LOW);
+
+  // Load configuration settings from storage
   flash.begin();
   fatfs.begin(&flash);
 
@@ -96,6 +113,14 @@ void setup() {
     if(netManager.loadConfigFromToml(fileContent)) {
       Serial.println("Network config mapped successfully.");
     }
+
+    if(oscManager.loadConfigFromToml(fileContent)) {
+      Serial.println("OSC config mapped successfully.");
+    }
+
+    if(loadHardwareConfig(fileContent)) {
+      Serial.println("Hardware config loaded successfully.");
+    }
   }
 
   // Initalize Ethernet FeatherWing
@@ -108,22 +133,81 @@ void setup() {
   } else {
     Ethernet.begin(netManager.getConfiguration().mac_address, ip, gateway, subnet);
   }
+
+  // Initialize OSC Message
+  outMsg.setAddress(oscManager.getOSCAddress().c_str());
 }
 
 void loop() {
-  // read button inputs
+  // Check status flags
+  if(Flags::triggerReset) {
+    resetToDefaults();
+    Flags::triggerReset = false;
+  }
 
+  if(Flags::triggerRelay) {
+    cyclePin(Hardware::Outputs::RELAY_PIN);
+    if(Flags::latchingRelay) {
+      cyclePin(Hardware::Outputs::LATCH_RESET_PIN);
+    }
+    Flags::triggerRelay = false;
+  }
+  
+  if(Flags::sendOSC) {
+    sendOSCMessage();
+    Flags::sendOSC = false;
+  }
+
+  // Check buttons
+  if(resetButton.isHeldFor(Hardware::Inputs::RESET_BUTTON_HOLD_TIME_MS)) {
+    Flags::triggerReset = true;
+  }
+
+  if(userButton.isHeldFor(Hardware::Inputs::USER_BUTTON_DEBOUNCE_TIME_MS)) {
+    Flags::triggerRelay = true;
+    
+    if(oscManager.getConfiguration().enabled) {
+      Flags::sendOSC = true;
+    }
+  } else {
+    Flags::triggerRelay = false;
+    Flags::sendOSC = false;
+  }
+  
   // parse incoming osc messages
 
   // update led output
 
   // handle web server and config requests
+  // Update outgoing osc message data
 
   // TODO: is there merit in adding a "stage mode lockout" to shutdown the web server when the device is in use?
   // This could be a 30 second hold of the user button, and a 30 second hold to release it.
+  
 }
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+bool loadHardwareConfig(const std::string& tomlString) {
+    toml::parse_result result = toml::parse(tomlString);
+    if(!result) return false; // Parse error
+
+    const toml::table& config = result.table();
+    Flags::latchingRelay = config["hardware"]["latching"].value_or(false);
+}
+
+void cyclePin(uint8_t pin) {
+    digitalWrite(pin, HIGH);
+    delay(10);
+    digitalWrite(pin, LOW);
+}
+
+void sendOSCMessage() {
+  IPAddress targetIp;
+  if(!targetIp.fromString(oscManager.getDesintationIp().c_str())) {
+    Serial.println("Error: could not parse destination IP Address.");
+    return;
+  }
+
+  udp.beginPacket(targetIp, oscManager.getPort());
+  outMsg.send(udp);
+  udp.endPacket();
 }
