@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Network Control Panel</title>
+  <style>
+    body {
+      background-color: #1e1e1e;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 50px;
+      box-sizing: border-box;
+      gap: 30px;
+    }
+
+    .panel {
+      background-color: #2b2b2b;
+      padding: 20px 25px 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.6);
+      width: 420px;
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      text-align: center;
+      color: #ffffff;
+      letter-spacing: 1px;
+    }
+
+    .section {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #444;
+      border-radius: 6px;
+      background-color: #252525;
+    }
+
+    .section-title {
+      font-size: 14px;
+      margin-bottom: 10px;
+      color: #9cdcfe;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+ 
+    p.note {
+      font-style: italic;
+      font-size: 11px;
+    }
+
+    p.description {
+      font-size: 12px;
+    }
+
+    p.alert {
+      font-size: 12px;
+      color: red;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      width: 90%;
+      padding: 6px 8px;
+      margin-top: 4px;
+      border-radius: 4px;
+      border: 1px solid #555;
+      background-color: #1e1e1e;
+      color: #fff;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #007acc;
+    }
+
+    input:invalid {
+      border-color: #ff5555;
+    }
+
+    input:valid {
+      border-color: #4caf50;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    .toggle input {
+      margin-right: 8px;
+      transform: scale(1.2);
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007acc;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #0094ff;
+    }
+
+    .alert-banner {
+        color:#ff5555;
+        display:none;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Form 1: Network Settings -->
+  <form class="panel" method="post" action="/submit-network">
+    <h2>Network Settings</h2>
+    <p class="description">Configure the IP address, subnet mask, gateway, and DNS server for this device.</p>
+
+    <div class="section">
+      <div class="section-title">Network Configuration</div>
+
+      <p class="alert-banner" id="net-alert">Network settings updated.</p>
+
+      <label>
+        IP Address
+        <input type="text" name="ip" id="ip" required
+          pattern="^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){{3}}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$"
+          title="Enter a valid IPv4 address (e.g., 192.168.1.100)"
+          value="">
+      </label>
+
+      <label>
+        Subnet Mask
+        <input type="text" name="subnet" id="subnet" required
+          pattern="^((255|254|252|248|240|224|192|128|0)\.){{3}}(255|254|252|248|240|224|192|128|0)$"
+          title="Enter a valid subnet mask (e.g., 255.255.255.0)"
+          value="">
+      </label>
+
+      <label>
+        Gateway
+        <input type="text" name="gateway" id="gateway" required
+          pattern="^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){{3}}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$"
+          title="Enter a valid IPv4 address"
+          value="">
+      </label>
+    </div>
+
+    <button type="submit">Apply Network Settings</button>
+  </form>
+
+  <!-- Form 2: OSC Message Settings -->
+  <form class="panel" method="post" action="/submit-osc">
+    <h2>OSC Message Settings</h2>
+    <p class="description">Configure an OSC message to send alongside the contact closure output when the Show Button is pressed.</p>
+
+    <div class="section">
+      <div class="section-title">OSC Configuration</div>
+
+      <label class="toggle">
+        <input type="checkbox" id="oscToggle" name="sendOSC" id="sencOSC" value="true">
+        Enable OSC Message
+      </label>
+      <p class="note">Note: if this box is unchecked, only the contact closure output will be enabled.</p>
+
+      <p class="alert-banner" id="osc-alert">OSC settings updated.</p>
+
+      <label>
+        Destination IP Address
+        <input type="text" name="destIp" id="destIp"
+          pattern="^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){{3}}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$"
+          title="Enter a valid IPv4 address"
+          value="">
+      </label>
+
+      <label>
+        Destination Port
+        <input type="number" name="destPort" id="destPort" min="1" max="65535"
+          title="Valid port range: 1–65535"
+          value="">
+      </label>
+
+      <label>
+        Message String
+        <input type="text" name="message" id="message"
+          value="">
+      </label>
+
+      <label>
+        Receive Port
+        <input type="number" name="recPort" id="recPort" min="1" max="65535"
+        title="Valid port range: 1-65535"
+        value="">
+      </label>
+    </div>
+
+    <button type="submit">Apply OSC Settings</button>
+  </form>
+  
+<!-- Script to dynamically populate current values -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+        fetch('/api/settings')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('ip').value = data.ip;
+                document.getElementById('subnet').value = data.subnet;
+                document.getElementById('gateway').value = data.gateway;
+                document.getElementById('destIp').value = data.destIp;
+                document.getElementById('destPort').value = data.destPort;
+                document.getElementById('message').value = data.message;
+                document.getElementById('recPort').value = data.recPort;
+                document.getElementById('sendOSC').checked = data.sendOSC;
+            })
+            .catch(err => console.error('Error loading current configs:', err));
+
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.get("net-success") === 'true') {
+                document.getElementById("net-alert").style.display = 'block';
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else if (urlParams.get("osc-success") === 'true') {
+                document.getElementById("osc-alert").style.display = 'block';
+                window.history.replaceState({}. document.title, window.location.pathname);
+            }
+        });
+  </script>
+
+</body>
+</html>

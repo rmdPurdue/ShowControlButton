@@ -31,11 +31,12 @@ public:
     void updateConfiguration(const OSCConfig& newConfig);
     OSCConfig getConfiguration() const;
     const std::string& getOSCAddress() const;
-    const std::string& getDesintationIp() const;
+    const std::string& getDestinationIp() const;
     const std::string& getIncomingAddress() const;
     int getOutPort() const;
     int getInPort() const;
     bool loadConfigFromToml(const std::string& tomlString);
-    void parseCommand(const std::string& rawLine);
+    void parseCommand(OSCConfig& config, const std::string& rawLine);
     OSCMessage compileMessage(OSCMessage& msg);
+    const std::string& getMessage() const;
 };

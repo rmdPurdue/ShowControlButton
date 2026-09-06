@@ -25,7 +25,7 @@ const std::string& OSCManager::getOSCAddress() const {
     return activeConfig.osc_address;
 }
 
-const std::string& OSCManager::getDesintationIp() const {
+const std::string& OSCManager::getDestinationIp() const {
     return activeConfig.destination_ip;
 }
 
@@ -45,13 +45,13 @@ bool OSCManager::loadConfigFromToml(const std::string& tomlString) {
     activeConfig.destination_ip = config["osc"]["destination_ip"].value_or("127.0.0.1");
     activeConfig.destination_port = std::stoi(config["osc"]["destination_port"].value_or("8000"));
     activeConfig.incoming_port = std::stoi(config["osc"]["incoming_port"].value_or("9000"));
-    parseCommand(config["osc"]["message"].value_or("/test"));
+    parseCommand(activeConfig, config["osc"]["message"].value_or("/test"));
     activeConfig.enabled = config["osc"]["enabled"].value_or(true);
 }
 
-void OSCManager::parseCommand(const std::string& rawLine) {
-    activeConfig.osc_address.clear();
-    activeConfig.args.clear();
+void OSCManager::parseCommand(OSCConfig& config, const std::string& rawLine) {
+    config.osc_address.clear();
+    config.args.clear();
 
     std::stringstream ss(rawLine);
     std::string token;
@@ -60,22 +60,22 @@ void OSCManager::parseCommand(const std::string& rawLine) {
     while (ss >> token) {
         // First token is always the address path
         if(isFirstToken) {
-            activeConfig.osc_address = token;
+            config.osc_address = token;
             isFirstToken = false;
             continue;
         }
 
         // Smart-type matching loop for arguments
         if(token == "true" || token == "TRUE") {
-            activeConfig.args.push_back(true);
+            config.args.push_back(true);
         } else if(token == "false" || token == "FALSE") {
-            activeConfig.args.push_back(false);
+            config.args.push_back(false);
         } else if(isInt(token)) {
-            activeConfig.args.push_back(std::stoi(token));
+            config.args.push_back(std::stoi(token));
         } else if(isFloat(token)) {
-            activeConfig.args.push_back(std::stof(token));
+            config.args.push_back(std::stof(token));
         } else {
-            activeConfig.args.push_back(token);
+            config.args.push_back(token);
         }
     }
 }
@@ -93,5 +93,23 @@ OSCMessage OSCManager::compileMessage(OSCMessage& msg) {
             msg.add(std::get<std::string>(arg).c_str());
         }
     }
+    return msg;
+}
+
+const std::string& OSCManager::getMessage() const {
+    std::string msg = getOSCAddress();
+
+    for(const auto& arg : activeConfig.args) {
+        if(std::holds_alternative<int>(arg)) {
+            msg += std::to_string(std::get<int>(arg));
+        } else if(std::holds_alternative<float>(arg)) {
+            msg += std::to_string(std::get<float>(arg));
+        } else if(std::holds_alternative<bool>(arg)) {
+            msg += std::get<bool>(arg) ? "true" : "false";
+        } else {
+            msg += std::get<std::string>(arg).c_str();
+        }
+    }
+
     return msg;
 }
